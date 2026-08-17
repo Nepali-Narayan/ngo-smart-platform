@@ -9,8 +9,6 @@ export async function updatePublication(
 ) {
   const supabase = await createClient();
 
-  console.log("UPDATE PUBLICATION ID:", id);
-
   if (!id) {
     throw new Error("Publication ID is missing.");
   }
@@ -58,7 +56,7 @@ export async function updatePublication(
     formData.get("description") || ""
   ).trim();
 
-  const published_date = String(
+  const publishedDate = String(
     formData.get("published_date") || ""
   ).trim();
 
@@ -66,11 +64,8 @@ export async function updatePublication(
     formData.get("status") || "draft"
   ).trim();
 
-  const coverFile =
-    formData.get("cover") as File | null;
-
-  const pdfFile =
-    formData.get("pdf") as File | null;
+  const coverFile = formData.get("cover");
+  const pdfFile = formData.get("pdf");
 
   /* --------------------------------
      VALIDATION
@@ -81,7 +76,9 @@ export async function updatePublication(
   }
 
   if (!type) {
-    throw new Error("Publication type is required.");
+    throw new Error(
+      "Publication type is required."
+    );
   }
 
   /* --------------------------------
@@ -100,13 +97,6 @@ export async function updatePublication(
     );
   }
 
-  /* --------------------------------
-     SLUG CHECK
-     
-     If title has not changed,
-     keep the existing slug.
-  -------------------------------- */
-
   let finalSlug = currentPublication.slug;
 
   if (currentPublication.title !== title) {
@@ -115,8 +105,9 @@ export async function updatePublication(
     const { data: slugOwner, error: slugError } =
       await supabase
         .from("publications")
-        .select("id, title, slug")
+        .select("id")
         .eq("slug", finalSlug)
+        .neq("id", currentPublication.id)
         .maybeSingle();
 
     if (slugError) {
@@ -125,12 +116,9 @@ export async function updatePublication(
       );
     }
 
-    if (
-      slugOwner &&
-      slugOwner.id !== currentPublication.id
-    ) {
+    if (slugOwner) {
       throw new Error(
-        `Another publication already uses the slug "${finalSlug}". Please choose a different title.`
+        `Another publication already uses the slug "${finalSlug}".`
       );
     }
   }
@@ -150,35 +138,31 @@ export async function updatePublication(
     file_url?: string;
   } = {
     title,
-    slug: finalSlug,
+    slug: finalSlug || newSlug,
     type,
     description: description || null,
-    published_date:
-      published_date || null,
+    published_date: publishedDate || null,
     status,
   };
 
   /* --------------------------------
-     REPLACE COVER
+     COVER IMAGE
+     Maximum: 50 MB
   -------------------------------- */
 
   if (
-    coverFile &&
     coverFile instanceof File &&
     coverFile.size > 0
   ) {
     if (!coverFile.type.startsWith("image/")) {
       throw new Error(
-        "Please select a valid cover image."
+        "Please select a valid image file."
       );
     }
 
-    if (
-      coverFile.size >
-      10 * 1024 * 1024
-    ) {
+    if (coverFile.size > 50 * 1024 * 1024) {
       throw new Error(
-        "Cover image must be smaller than 10 MB."
+        "Cover image must be smaller than 50 MB."
       );
     }
 
@@ -188,14 +172,14 @@ export async function updatePublication(
         .pop()
         ?.toLowerCase() || "jpg";
 
-    const filePath =
+    const coverPath =
       `covers/${finalSlug}-${Date.now()}.${extension}`;
 
-    const { error: uploadError } =
+    const { error: coverUploadError } =
       await supabase.storage
         .from("publications")
         .upload(
-          filePath,
+          coverPath,
           coverFile,
           {
             contentType: coverFile.type,
@@ -203,27 +187,29 @@ export async function updatePublication(
           }
         );
 
-    if (uploadError) {
+    if (coverUploadError) {
       throw new Error(
-        `Cover image upload failed: ${uploadError.message}`
+        `Cover image upload failed: ${coverUploadError.message}`
       );
     }
 
-    const { data: publicUrlData } =
+    const {
+      data: coverPublicUrl,
+    } =
       supabase.storage
         .from("publications")
-        .getPublicUrl(filePath);
+        .getPublicUrl(coverPath);
 
     updateData.cover_image =
-      publicUrlData.publicUrl;
+      coverPublicUrl.publicUrl;
   }
 
   /* --------------------------------
-     REPLACE PDF
+     PDF
+     Maximum: 50 MB
   -------------------------------- */
 
   if (
-    pdfFile &&
     pdfFile instanceof File &&
     pdfFile.size > 0
   ) {
@@ -232,27 +218,24 @@ export async function updatePublication(
       "application/pdf"
     ) {
       throw new Error(
-        "Please select a PDF file."
+        "Please select a valid PDF file."
       );
     }
 
-    if (
-      pdfFile.size >
-      20 * 1024 * 1024
-    ) {
+    if (pdfFile.size > 50 * 1024 * 1024) {
       throw new Error(
-        "PDF must be smaller than 20 MB."
+        "PDF must be smaller than 50 MB."
       );
     }
 
-    const filePath =
+    const pdfPath =
       `pdfs/${finalSlug}-${Date.now()}.pdf`;
 
-    const { error: uploadError } =
+    const { error: pdfUploadError } =
       await supabase.storage
         .from("publications")
         .upload(
-          filePath,
+          pdfPath,
           pdfFile,
           {
             contentType:
@@ -261,19 +244,21 @@ export async function updatePublication(
           }
         );
 
-    if (uploadError) {
+    if (pdfUploadError) {
       throw new Error(
-        `PDF upload failed: ${uploadError.message}`
+        `PDF upload failed: ${pdfUploadError.message}`
       );
     }
 
-    const { data: publicUrlData } =
+    const {
+      data: pdfPublicUrl,
+    } =
       supabase.storage
         .from("publications")
-        .getPublicUrl(filePath);
+        .getPublicUrl(pdfPath);
 
     updateData.file_url =
-      publicUrlData.publicUrl;
+      pdfPublicUrl.publicUrl;
   }
 
   /* --------------------------------
@@ -284,7 +269,10 @@ export async function updatePublication(
     await supabase
       .from("publications")
       .update(updateData)
-      .eq("id", currentPublication.id);
+      .eq(
+        "id",
+        currentPublication.id
+      );
 
   if (updateError) {
     throw new Error(
