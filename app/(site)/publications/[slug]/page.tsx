@@ -18,12 +18,22 @@ type PageProps = {
   params: Promise<{
     slug: string;
   }>;
+  searchParams: Promise<{
+    lang?: string;
+  }>;
 };
+
+export const dynamic = "force-dynamic";
 
 export default async function PublicationDetailPage({
   params,
+  searchParams,
 }: PageProps) {
   const { slug } = await params;
+  const { lang } = await searchParams;
+
+  const language = lang === "ne" ? "ne" : "en";
+  const isNepali = language === "ne";
 
   const supabase = await createClient();
 
@@ -51,7 +61,7 @@ export default async function PublicationDetailPage({
       <main className="min-h-screen bg-slate-50 px-6 py-16">
         <div className="mx-auto max-w-4xl rounded-3xl border border-red-200 bg-red-50 p-8">
           <h1 className="text-2xl font-bold text-red-800">
-            Publication Error
+            {isNepali ? "प्रकाशन त्रुटि" : "Publication Error"}
           </h1>
 
           <p className="mt-4 text-red-700">
@@ -71,14 +81,19 @@ export default async function PublicationDetailPage({
   }
 
   const formattedDate = publication.published_date
-    ? new Date(
-        publication.published_date
-      ).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : "Not specified";
+    ? new Date(publication.published_date).toLocaleDateString(
+        isNepali ? "ne-NP" : "en-US",
+        {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        }
+      )
+    : isNepali
+      ? "उल्लेख गरिएको छैन"
+      : "Not specified";
+
+  const publicationsUrl = `/publications?lang=${language}`;
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -89,20 +104,21 @@ export default async function PublicationDetailPage({
 
       <section className="relative overflow-hidden bg-slate-950 text-white">
 
-        {/* Background decoration */}
-
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.25),transparent_40%),radial-gradient(circle_at_bottom_left,rgba(37,99,235,0.18),transparent_40%)]" />
 
         <div className="relative mx-auto max-w-7xl px-6 pb-20 pt-8 sm:px-8 lg:px-10">
 
-          {/* BACK BUTTON */}
+          {/* BACK */}
 
           <Link
-            href="/publications"
+            href={publicationsUrl}
             className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 backdrop-blur transition hover:border-white/30 hover:bg-white/10 hover:text-white"
           >
             <span>←</span>
-            Back to Publications
+
+            {isNepali
+              ? "प्रकाशनहरूमा फर्कनुहोस्"
+              : "Back to Publications"}
           </Link>
 
           {/* HERO CONTENT */}
@@ -116,8 +132,11 @@ export default async function PublicationDetailPage({
               </span>
 
               <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.12em] text-emerald-200">
+
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                Published
+
+                {isNepali ? "प्रकाशित" : "Published"}
+
               </span>
 
             </div>
@@ -130,7 +149,9 @@ export default async function PublicationDetailPage({
 
               <span className="flex items-center gap-2">
                 <span className="text-base">📅</span>
-                Published {formattedDate}
+
+                {isNepali ? "प्रकाशित" : "Published"}{" "}
+                {formattedDate}
               </span>
 
               <span className="hidden h-1 w-1 rounded-full bg-slate-600 sm:block" />
@@ -208,7 +229,11 @@ export default async function PublicationDetailPage({
                     className="flex w-full items-center justify-center gap-3 rounded-2xl bg-blue-600 px-6 py-4 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700"
                   >
                     <span className="text-lg">📖</span>
-                    Read Publication
+
+                    {isNepali
+                      ? "प्रकाशन पढ्नुहोस्"
+                      : "Read Publication"}
+
                   </a>
 
                   <a
@@ -217,7 +242,11 @@ export default async function PublicationDetailPage({
                     className="flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-6 py-4 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-slate-50"
                   >
                     <span className="text-lg">↓</span>
-                    Download PDF
+
+                    {isNepali
+                      ? "PDF डाउनलोड गर्नुहोस्"
+                      : "Download PDF"}
+
                   </a>
 
                 </div>
@@ -229,11 +258,15 @@ export default async function PublicationDetailPage({
                 <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-5 text-center">
 
                   <p className="text-sm font-semibold text-slate-600">
-                    PDF not available
+                    {isNepali
+                      ? "PDF उपलब्ध छैन"
+                      : "PDF not available"}
                   </p>
 
                   <p className="mt-1 text-xs text-slate-400">
-                    The publication file has not been uploaded yet.
+                    {isNepali
+                      ? "प्रकाशन फाइल अहिलेसम्म अपलोड गरिएको छैन।"
+                      : "The publication file has not been uploaded yet."}
                   </p>
 
                 </div>
@@ -261,13 +294,17 @@ export default async function PublicationDetailPage({
                 </div>
 
                 <div>
+
                   <p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-600">
-                    Publication
+                    {isNepali ? "प्रकाशन" : "Publication"}
                   </p>
 
                   <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">
-                    About this publication
+                    {isNepali
+                      ? "यस प्रकाशनको बारेमा"
+                      : "About this publication"}
                   </h2>
+
                 </div>
 
               </div>
@@ -283,7 +320,9 @@ export default async function PublicationDetailPage({
                 ) : (
 
                   <p className="text-base leading-7 text-slate-500">
-                    No description is available for this publication.
+                    {isNepali
+                      ? "यस प्रकाशनको विवरण उपलब्ध छैन।"
+                      : "No description is available for this publication."}
                   </p>
 
                 )}
@@ -303,13 +342,17 @@ export default async function PublicationDetailPage({
                 </div>
 
                 <div>
+
                   <p className="text-xs font-bold uppercase tracking-[0.15em] text-slate-500">
-                    Details
+                    {isNepali ? "विवरण" : "Details"}
                   </p>
 
                   <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">
-                    Publication Information
+                    {isNepali
+                      ? "प्रकाशन जानकारी"
+                      : "Publication Information"}
                   </h2>
+
                 </div>
 
               </div>
@@ -320,11 +363,11 @@ export default async function PublicationDetailPage({
 
                 <div className="flex flex-col gap-2 py-5 sm:flex-row sm:items-center sm:justify-between">
 
-                  <div>
-                    <p className="text-sm font-medium text-slate-500">
-                      Publication Type
-                    </p>
-                  </div>
+                  <p className="text-sm font-medium text-slate-500">
+                    {isNepali
+                      ? "प्रकाशनको प्रकार"
+                      : "Publication Type"}
+                  </p>
 
                   <span className="inline-flex w-fit rounded-full bg-blue-50 px-3 py-1.5 text-sm font-bold text-blue-700">
                     {publication.type}
@@ -337,7 +380,9 @@ export default async function PublicationDetailPage({
                 <div className="flex flex-col gap-2 py-5 sm:flex-row sm:items-center sm:justify-between">
 
                   <p className="text-sm font-medium text-slate-500">
-                    Publication Date
+                    {isNepali
+                      ? "प्रकाशन मिति"
+                      : "Publication Date"}
                   </p>
 
                   <p className="font-semibold text-slate-900">
@@ -351,14 +396,14 @@ export default async function PublicationDetailPage({
                 <div className="flex flex-col gap-2 py-5 sm:flex-row sm:items-center sm:justify-between">
 
                   <p className="text-sm font-medium text-slate-500">
-                    Status
+                    {isNepali ? "स्थिति" : "Status"}
                   </p>
 
                   <span className="inline-flex w-fit items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-sm font-bold text-emerald-700">
 
                     <span className="h-2 w-2 rounded-full bg-emerald-500" />
 
-                    Published
+                    {isNepali ? "प्रकाशित" : "Published"}
 
                   </span>
 
@@ -369,13 +414,19 @@ export default async function PublicationDetailPage({
                 <div className="flex flex-col gap-2 py-5 sm:flex-row sm:items-center sm:justify-between">
 
                   <p className="text-sm font-medium text-slate-500">
-                    Publication File
+                    {isNepali
+                      ? "प्रकाशन फाइल"
+                      : "Publication File"}
                   </p>
 
                   <p className="font-semibold text-slate-900">
                     {publication.file_url
-                      ? "PDF Available"
-                      : "Not Available"}
+                      ? isNepali
+                        ? "PDF उपलब्ध छ"
+                        : "PDF Available"
+                      : isNepali
+                        ? "उपलब्ध छैन"
+                        : "Not Available"}
                   </p>
 
                 </div>
@@ -397,16 +448,21 @@ export default async function PublicationDetailPage({
                 <div className="relative">
 
                   <p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-200">
-                    Full Publication
+                    {isNepali
+                      ? "पूर्ण प्रकाशन"
+                      : "Full Publication"}
                   </p>
 
                   <h2 className="mt-2 text-2xl font-extrabold">
-                    Ready to read?
+                    {isNepali
+                      ? "पढ्न तयार हुनुहुन्छ?"
+                      : "Ready to read?"}
                   </h2>
 
                   <p className="mt-2 max-w-xl text-sm leading-6 text-blue-100">
-                    Open the complete publication or download the PDF
-                    for offline reading.
+                    {isNepali
+                      ? "पूर्ण प्रकाशन खोल्नुहोस् वा अफलाइन पढ्न PDF डाउनलोड गर्नुहोस्।"
+                      : "Open the complete publication or download the PDF for offline reading."}
                   </p>
 
                   <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -417,7 +473,9 @@ export default async function PublicationDetailPage({
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-bold text-blue-700 transition hover:bg-blue-50"
                     >
-                      Open PDF →
+                      {isNepali
+                        ? "PDF खोल्नुहोस् →"
+                        : "Open PDF →"}
                     </a>
 
                     <a
@@ -425,7 +483,9 @@ export default async function PublicationDetailPage({
                       download
                       className="inline-flex items-center justify-center rounded-xl border border-white/20 bg-white/10 px-5 py-3 text-sm font-bold text-white backdrop-blur transition hover:bg-white/20"
                     >
-                      Download PDF
+                      {isNepali
+                        ? "PDF डाउनलोड"
+                        : "Download PDF"}
                     </a>
 
                   </div>
@@ -441,11 +501,15 @@ export default async function PublicationDetailPage({
             <div className="pt-2">
 
               <Link
-                href="/publications"
+                href={publicationsUrl}
                 className="inline-flex items-center gap-2 text-sm font-bold text-slate-600 transition hover:text-blue-600"
               >
                 <span>←</span>
-                Browse all publications
+
+                {isNepali
+                  ? "सबै प्रकाशनहरू हेर्नुहोस्"
+                  : "Browse all publications"}
+
               </Link>
 
             </div>

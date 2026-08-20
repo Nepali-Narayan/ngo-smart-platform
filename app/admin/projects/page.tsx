@@ -19,7 +19,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ e
   createHref="/admin/projects/new"
   editBaseHref="/admin/projects"
   createLabel="Add Project"
-  columns={["title", "category", "location", "status", "created_at"]}
+  columns={["title", "location", "status", "start_date", "created_at"]}
 />
       </div>
     </>

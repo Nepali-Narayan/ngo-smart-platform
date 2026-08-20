@@ -3,9 +3,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
-export async function updatePublication(
+export async function createPublicationUploadUrl(
   id: string,
-  formData: FormData
+  fileType: "pdf" | "cover",
+  fileName: string
 ) {
   const supabase = await createClient();
 
@@ -13,36 +14,156 @@ export async function updatePublication(
     throw new Error("Publication ID is missing.");
   }
 
-  /* --------------------------------
-     GET CURRENT PUBLICATION
-  -------------------------------- */
+  if (!fileName) {
+    throw new Error("File name is missing.");
+  }
 
-  const { data: currentPublication, error: currentError } =
-    await supabase
-      .from("publications")
-      .select(`
-        id,
-        title,
-        slug,
-        type,
-        description,
-        cover_image,
-        file_url,
-        published_date,
-        status
-      `)
-      .eq("id", id)
-      .single();
+  const {
+    data: publication,
+    error: publicationError,
+  } = await supabase
+    .from("publications")
+    .select("id, title, slug")
+    .eq("id", id)
+    .single();
 
-  if (currentError || !currentPublication) {
+  if (
+    publicationError ||
+    !publication
+  ) {
     throw new Error(
-      `Publication not found. ID: ${id}`
+      "Publication not found."
     );
   }
 
-  /* --------------------------------
-     FORM VALUES
-  -------------------------------- */
+  const extension =
+    fileName
+      .split(".")
+      .pop()
+      ?.toLowerCase() || "bin";
+
+  const safeSlug =
+    publication.slug ||
+    publication.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
+
+  const timestamp = Date.now();
+
+  let path: string;
+
+  if (fileType === "pdf") {
+    path =
+      `pdfs/${safeSlug}-${timestamp}.pdf`;
+  } else {
+    path =
+      `covers/${safeSlug}-${timestamp}.${extension}`;
+  }
+
+  const {
+    data,
+    error,
+  } = await supabase.storage
+    .from("publications")
+    .createSignedUploadUrl(path);
+
+  if (error || !data) {
+    throw new Error(
+      `Unable to create upload URL: ${
+        error?.message || "Unknown error"
+      }`
+    );
+  }
+
+  return {
+    path,
+    token: data.token,
+  };
+}
+
+export async function savePublicationFile(
+  id: string,
+  fileType: "pdf" | "cover",
+  path: string
+) {
+  const supabase = await createClient();
+
+  if (!id) {
+    throw new Error(
+      "Publication ID is missing."
+    );
+  }
+
+  if (!path) {
+    throw new Error(
+      "Uploaded file path is missing."
+    );
+  }
+
+  const {
+    data: publication,
+    error: publicationError,
+  } = await supabase
+    .from("publications")
+    .select("id")
+    .eq("id", id)
+    .single();
+
+  if (
+    publicationError ||
+    !publication
+  ) {
+    throw new Error(
+      "Publication not found."
+    );
+  }
+
+  const {
+    data: publicUrlData,
+  } =
+    supabase.storage
+      .from("publications")
+      .getPublicUrl(path);
+
+  const publicUrl =
+    publicUrlData.publicUrl;
+
+  const updateData =
+    fileType === "pdf"
+      ? { file_url: publicUrl }
+      : { cover_image: publicUrl };
+
+  const {
+    error: updateError,
+  } = await supabase
+    .from("publications")
+    .update(updateData)
+    .eq("id", id);
+
+  if (updateError) {
+    throw new Error(
+      `Database update failed: ${updateError.message}`
+    );
+  }
+
+  return {
+    success: true,
+    url: publicUrl,
+  };
+}
+
+export async function updatePublicationDetails(
+  id: string,
+  formData: FormData
+) {
+  const supabase = await createClient();
+
+  if (!id) {
+    throw new Error(
+      "Publication ID is missing."
+    );
+  }
 
   const title = String(
     formData.get("title") || ""
@@ -64,15 +185,10 @@ export async function updatePublication(
     formData.get("status") || "draft"
   ).trim();
 
-  const coverFile = formData.get("cover");
-  const pdfFile = formData.get("pdf");
-
-  /* --------------------------------
-     VALIDATION
-  -------------------------------- */
-
   if (!title) {
-    throw new Error("Title is required.");
+    throw new Error(
+      "Title is required."
+    );
   }
 
   if (!type) {
@@ -80,10 +196,6 @@ export async function updatePublication(
       "Publication type is required."
     );
   }
-
-  /* --------------------------------
-     CREATE SLUG
-  -------------------------------- */
 
   const newSlug = title
     .toLowerCase()
@@ -97,18 +209,41 @@ export async function updatePublication(
     );
   }
 
-  let finalSlug = currentPublication.slug;
+  const {
+    data: currentPublication,
+    error: currentError,
+  } = await supabase
+    .from("publications")
+    .select("id, title, slug")
+    .eq("id", id)
+    .single();
 
-  if (currentPublication.title !== title) {
+  if (
+    currentError ||
+    !currentPublication
+  ) {
+    throw new Error(
+      "Publication not found."
+    );
+  }
+
+  let finalSlug =
+    currentPublication.slug;
+
+  if (
+    currentPublication.title !== title
+  ) {
     finalSlug = newSlug;
 
-    const { data: slugOwner, error: slugError } =
-      await supabase
-        .from("publications")
-        .select("id")
-        .eq("slug", finalSlug)
-        .neq("id", currentPublication.id)
-        .maybeSingle();
+    const {
+      data: slugOwner,
+      error: slugError,
+    } = await supabase
+      .from("publications")
+      .select("id")
+      .eq("slug", finalSlug)
+      .neq("id", id)
+      .maybeSingle();
 
     if (slugError) {
       throw new Error(
@@ -123,156 +258,21 @@ export async function updatePublication(
     }
   }
 
-  /* --------------------------------
-     UPDATE DATA
-  -------------------------------- */
-
-  const updateData: {
-    title: string;
-    slug: string;
-    type: string;
-    description: string | null;
-    published_date: string | null;
-    status: string;
-    cover_image?: string;
-    file_url?: string;
-  } = {
-    title,
-    slug: finalSlug || newSlug,
-    type,
-    description: description || null,
-    published_date: publishedDate || null,
-    status,
-  };
-
-  /* --------------------------------
-     COVER IMAGE
-     Maximum: 50 MB
-  -------------------------------- */
-
-  if (
-    coverFile instanceof File &&
-    coverFile.size > 0
-  ) {
-    if (!coverFile.type.startsWith("image/")) {
-      throw new Error(
-        "Please select a valid image file."
-      );
-    }
-
-    if (coverFile.size > 50 * 1024 * 1024) {
-      throw new Error(
-        "Cover image must be smaller than 50 MB."
-      );
-    }
-
-    const extension =
-      coverFile.name
-        .split(".")
-        .pop()
-        ?.toLowerCase() || "jpg";
-
-    const coverPath =
-      `covers/${finalSlug}-${Date.now()}.${extension}`;
-
-    const { error: coverUploadError } =
-      await supabase.storage
-        .from("publications")
-        .upload(
-          coverPath,
-          coverFile,
-          {
-            contentType: coverFile.type,
-            upsert: false,
-          }
-        );
-
-    if (coverUploadError) {
-      throw new Error(
-        `Cover image upload failed: ${coverUploadError.message}`
-      );
-    }
-
-    const {
-      data: coverPublicUrl,
-    } =
-      supabase.storage
-        .from("publications")
-        .getPublicUrl(coverPath);
-
-    updateData.cover_image =
-      coverPublicUrl.publicUrl;
-  }
-
-  /* --------------------------------
-     PDF
-     Maximum: 50 MB
-  -------------------------------- */
-
-  if (
-    pdfFile instanceof File &&
-    pdfFile.size > 0
-  ) {
-    if (
-      pdfFile.type !==
-      "application/pdf"
-    ) {
-      throw new Error(
-        "Please select a valid PDF file."
-      );
-    }
-
-    if (pdfFile.size > 50 * 1024 * 1024) {
-      throw new Error(
-        "PDF must be smaller than 50 MB."
-      );
-    }
-
-    const pdfPath =
-      `pdfs/${finalSlug}-${Date.now()}.pdf`;
-
-    const { error: pdfUploadError } =
-      await supabase.storage
-        .from("publications")
-        .upload(
-          pdfPath,
-          pdfFile,
-          {
-            contentType:
-              "application/pdf",
-            upsert: false,
-          }
-        );
-
-    if (pdfUploadError) {
-      throw new Error(
-        `PDF upload failed: ${pdfUploadError.message}`
-      );
-    }
-
-    const {
-      data: pdfPublicUrl,
-    } =
-      supabase.storage
-        .from("publications")
-        .getPublicUrl(pdfPath);
-
-    updateData.file_url =
-      pdfPublicUrl.publicUrl;
-  }
-
-  /* --------------------------------
-     UPDATE DATABASE
-  -------------------------------- */
-
-  const { error: updateError } =
-    await supabase
-      .from("publications")
-      .update(updateData)
-      .eq(
-        "id",
-        currentPublication.id
-      );
+  const {
+    error: updateError,
+  } = await supabase
+    .from("publications")
+    .update({
+      title,
+      slug: finalSlug || newSlug,
+      type,
+      description:
+        description || null,
+      published_date:
+        publishedDate || null,
+      status,
+    })
+    .eq("id", id);
 
   if (updateError) {
     throw new Error(
@@ -280,9 +280,7 @@ export async function updatePublication(
     );
   }
 
-  /* --------------------------------
-     SUCCESS
-  -------------------------------- */
-
-  redirect("/admin/publications");
+  redirect(
+    "/admin/publications"
+  );
 }

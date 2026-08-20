@@ -13,7 +13,13 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ e
       <p className="mt-2 text-slate-600">Create, edit and delete programs records.</p>
       {(params.error || error) && <div className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">{params.error || error?.message}</div>}
       <div className="mt-8">
-        <CrudTable table="programs" rows={data ?? []} createHref="/admin/programs/new" createLabel="Add Program" columns=["title","category","status","created_at"] />
+        <CrudTable
+            table="programs"
+            rows={data ?? []}
+            createHref="/admin/programs/new"
+            createLabel="Add Program"
+            columns={["title", "category", "status", "created_at"]}
+          />
       </div>
     </>
   );

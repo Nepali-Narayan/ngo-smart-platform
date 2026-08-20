@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = "force-dynamic";
+
 type Publication = {
   id: string;
   title: string;
@@ -13,7 +15,20 @@ type Publication = {
   status: string;
 };
 
-export default async function PublicationsPage() {
+type PublicationsPageProps = {
+  searchParams: Promise<{
+    lang?: string;
+  }>;
+};
+
+export default async function PublicationsPage({
+  searchParams,
+}: PublicationsPageProps) {
+  const { lang } = await searchParams;
+
+  const language = lang === "ne" ? "ne" : "en";
+  const isNepali = language === "ne";
+
   const supabase = await createClient();
 
   const { data: publications, error } = await supabase
@@ -34,23 +49,35 @@ export default async function PublicationsPage() {
       ascending: false,
     });
 
+  /* =====================================
+     ERROR
+  ====================================== */
+
   if (error) {
     return (
       <main className="min-h-screen bg-slate-50 px-6 py-12">
         <div className="mx-auto max-w-6xl">
+
           <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
+
             <h1 className="text-2xl font-bold text-red-800">
-              Publications
+              {isNepali
+                ? "प्रकाशनहरू"
+                : "Publications"}
             </h1>
 
             <p className="mt-3 text-red-700">
-              Unable to load publications.
+              {isNepali
+                ? "प्रकाशनहरू लोड गर्न सकिएन।"
+                : "Unable to load publications."}
             </p>
 
             <p className="mt-2 text-sm text-red-600">
               {error.message}
             </p>
+
           </div>
+
         </div>
       </main>
     );
@@ -59,32 +86,43 @@ export default async function PublicationsPage() {
   return (
     <main className="min-h-screen bg-slate-50">
 
-      {/* Hero */}
+      {/* =====================================
+          HERO
+      ====================================== */}
 
       <section className="border-b border-slate-200 bg-white">
+
         <div className="mx-auto max-w-6xl px-6 py-16">
 
           <div className="max-w-3xl">
 
             <span className="inline-flex rounded-full bg-blue-50 px-4 py-1.5 text-sm font-semibold text-blue-700">
-              Knowledge & Resources
+              {isNepali
+                ? "ज्ञान तथा स्रोतहरू"
+                : "Knowledge & Resources"}
             </span>
 
             <h1 className="mt-5 text-4xl font-bold tracking-tight text-slate-900 md:text-5xl">
-              Publications
+              {isNepali
+                ? "प्रकाशनहरू"
+                : "Publications"}
             </h1>
 
             <p className="mt-5 text-lg leading-8 text-slate-600">
-              Explore our reports, research, books, guidelines,
-              newsletters and other publications.
+              {isNepali
+                ? "हाम्रा प्रतिवेदन, अनुसन्धान, पुस्तक, निर्देशिका, समाचारपत्र तथा अन्य प्रकाशनहरू हेर्नुहोस्।"
+                : "Explore our reports, research, books, guidelines, newsletters and other publications."}
             </p>
 
           </div>
 
         </div>
+
       </section>
 
-      {/* Publications */}
+      {/* =====================================
+          PUBLICATIONS
+      ====================================== */}
 
       <section className="mx-auto max-w-6xl px-6 py-12">
 
@@ -97,11 +135,15 @@ export default async function PublicationsPage() {
             </div>
 
             <h2 className="mt-6 text-2xl font-bold text-slate-900">
-              No publications available
+              {isNepali
+                ? "कुनै प्रकाशन उपलब्ध छैन"
+                : "No publications available"}
             </h2>
 
             <p className="mx-auto mt-3 max-w-md text-slate-600">
-              Published publications will appear here.
+              {isNepali
+                ? "प्रकाशित प्रकाशनहरू यहाँ देखिनेछन्।"
+                : "Published publications will appear here."}
             </p>
 
           </div>
@@ -115,13 +157,13 @@ export default async function PublicationsPage() {
 
                 <Link
                   key={publication.id}
-                 href={`/publications/${publication.slug}`}
+                  href={`/publications/${publication.slug}?lang=${language}`}
                   className="group block"
                 >
 
                   <article className="h-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
 
-                    {/* Cover */}
+                    {/* COVER */}
 
                     <div className="relative h-64 overflow-hidden bg-slate-100">
 
@@ -142,14 +184,16 @@ export default async function PublicationsPage() {
                           </div>
 
                           <span className="mt-4 text-sm font-semibold text-slate-500">
-                            Publication
+                            {isNepali
+                              ? "प्रकाशन"
+                              : "Publication"}
                           </span>
 
                         </div>
 
                       )}
 
-                      {/* Type */}
+                      {/* TYPE */}
 
                       <div className="absolute left-4 top-4">
 
@@ -161,7 +205,7 @@ export default async function PublicationsPage() {
 
                     </div>
 
-                    {/* Content */}
+                    {/* CONTENT */}
 
                     <div className="flex min-h-[250px] flex-col p-6">
 
@@ -170,25 +214,47 @@ export default async function PublicationsPage() {
                       </h2>
 
                       <p className="mt-3 line-clamp-3 text-sm leading-6 text-slate-600">
+
                         {publication.description ||
-                          "Explore this publication and learn more about its contents."}
+                          (isNepali
+                            ? "यस प्रकाशनको बारेमा थप जानकारी प्राप्त गर्नुहोस्।"
+                            : "Explore this publication and learn more about its contents.")}
+
                       </p>
 
                       {publication.published_date && (
+
                         <p className="mt-4 text-xs font-medium text-slate-400">
-                          Published{" "}
+
+                          {isNepali
+                            ? "प्रकाशित"
+                            : "Published"}{" "}
+
                           {new Date(
                             publication.published_date
-                          ).toLocaleDateString()}
+                          ).toLocaleDateString(
+                            isNepali
+                              ? "ne-NP"
+                              : "en-US",
+                            {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            }
+                          )}
+
                         </p>
+
                       )}
 
-                      {/* Bottom */}
+                      {/* BOTTOM */}
 
                       <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-5">
 
                         <span className="text-sm font-semibold text-blue-600">
-                          View Publication
+                          {isNepali
+                            ? "प्रकाशन हेर्नुहोस्"
+                            : "View Publication"}
                         </span>
 
                         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-50 text-blue-600 transition group-hover:bg-blue-600 group-hover:text-white">
