@@ -42,7 +42,7 @@ export default function NewPublicationPage() {
         publishedDate,
         status,
         coverImage,
-        pdf,
+        pdfFile: pdf,
       });
 
       if (!result.success) {
