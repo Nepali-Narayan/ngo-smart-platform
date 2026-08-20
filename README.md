@@ -1,113 +1,130 @@
 # NGO Smart Platform
 
-A reusable Next.js starter for an AI-ready NGO website.
+A modern, bilingual NGO website and content management platform built with Next.js, TypeScript, Tailwind CSS, and Supabase.
 
-## Included
+The platform provides a public-facing NGO website together with an administrative dashboard for managing programs, projects, news, publications, gallery media, and other organizational content.
 
-- Responsive public homepage
-- Mobile navigation
-- Reusable theme variables
-- Centralized site configuration
-- Programs, projects, impact, stories and donation CTA sections
-- SEO metadata
-- Accessible navigation labels
-- Ready for CMS, Supabase, AI, donation and admin modules
+---
 
-## Requirements
+## ✨ Features
 
-- Node.js 20+
-- npm
+### 🌐 Public Website
 
-## Run locally
+- Responsive modern website
+- Home page with dynamic content
+- About organization section
+- Programs listing and detail pages
+- Projects listing and detail pages
+- News & Stories
+- Publications
+- Image Gallery
+- Video Gallery
+- Contact section
+- SEO-friendly pages
+- Slug-based public URLs
 
-```bash
-npm install
-npm run dev
-```
+### 🔐 Admin Dashboard
 
-Open http://localhost:3000
+- Secure admin login
+- Protected admin dashboard
+- Content management interface
+- Programs management
+- Projects management
+- News & Stories management
+- Publications management
+- Gallery management
+- Media management
+- Website settings
+- Draft and published content status
 
-## Customize branding
+### 📚 Publications
 
-Edit:
+- Create and manage publications
+- Publication categories/types
+- Publication descriptions
+- Published dates
+- Cover images
+- PDF document uploads
+- Public publication detail pages
+- Downloadable publication files
+- Slug-based publication URLs
 
-`config/site.ts`
+### 🖼️ Gallery
 
-Change:
+- Image gallery
+- Video gallery
+- Media filtering
+- Published/unpublished media
+- Gallery categories
+- Image and video metadata
+- Public gallery display
+- Responsive gallery interface
 
-- `name`
-- `shortName`
-- `logoText`
-- `tagline`
-- navigation
-- contact details
-- social links
-- theme colors
+### 🌍 Language Support
 
-The CSS variables in `app/globals.css` are mapped to the theme values.
+The platform supports:
 
-## Change homepage content
+- English
+- Nepali
 
-Edit:
+Users can switch between English and Nepali content from the website navigation.
 
-`app/page.tsx`
+### ☁️ Supabase Integration
 
-The architecture is intentionally separated into components so future CMS data can replace the sample arrays.
+Supabase is used for:
 
-## Next development phases
-
-1. Supabase/PostgreSQL schema
-2. Authentication and roles
-3. Admin dashboard
-4. CMS content management
-5. Media library
-6. Projects/programs CRUD
-7. Blog/news
-8. Volunteer management
-9. Donation integrations
-10. English/Nepali content model
-11. AI chatbot and AI content tools
-12. Analytics and reporting
-13. Production deployment
-
-## Admin + Supabase
-
-The project now includes:
-- Supabase browser/server clients
-- Auth session middleware
-- `/admin/login`
-- Protected `/admin` dashboard
-- Admin sidebar
-- Database-backed record counts
-- PostgreSQL schema with RLS
-- Profiles and roles: `super_admin`, `admin`, `editor`
-- Volunteer and donation tables
-- Site settings table
-
-See `docs/ADMIN-SETUP.md` for setup instructions.
-
-
-## CRUD management
-
-The admin dashboard now supports live create/read/update/delete flows for:
-- Pages
-- Programs
-- Projects
-- News & Blog
-- Gallery media metadata
-- Volunteers
-- Donations
+- PostgreSQL database
+- Authentication
+- Row Level Security (RLS)
+- Storage
+- Content management
+- Media management
 - Website settings
 
-Forms use server actions and Supabase RLS. Image uploads are still intentionally separated into the next Storage module.
+---
 
+## 🛠️ Technology Stack
 
-## Media Library Integration
+| Technology   | Purpose                              |
+| ------------ | ------------------------------------ |
+| Next.js      | Full-stack React framework           |
+| React        | User interface                       |
+| TypeScript   | Type-safe development                |
+| Tailwind CSS | Styling and responsive UI            |
+| Supabase     | Database, authentication and storage |
+| PostgreSQL   | Relational database                  |
+| Git          | Version control                      |
+| GitHub       | Source code repository               |
 
-Content editors can now select uploaded images from the Media Library when editing:
-- Pages
-- Programs
-- Projects
-- News & Blog
+---
 
-The public homepage reads published programs, projects, posts and site settings directly from Supabase, so published admin content can appear automatically.
+## 📁 Main Modules
+
+```text
+NGO Smart Platform
+│
+├── Public Website
+│   ├── Home
+│   ├── About
+│   ├── Programs
+│   ├── Projects
+│   ├── News & Stories
+│   ├── Publications
+│   └── Gallery
+│
+├── Admin Dashboard
+│   ├── Dashboard
+│   ├── Programs
+│   ├── Projects
+│   ├── News & Stories
+│   ├── Publications
+│   ├── Gallery
+│   ├── Media
+│   └── Settings
+│
+└── Supabase
+    ├── PostgreSQL
+    ├── Authentication
+    ├── Storage
+    └── Row Level Security
+```
